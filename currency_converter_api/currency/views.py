@@ -4,7 +4,7 @@ from rest_framework import viewsets
 from currency_converter_api.currency.serializers import CurrencySerializer
 from rest_framework.response import Response
 
-import json
+import json, copy
 import requests
 from datetime import datetime, timezone, timedelta
 
@@ -24,7 +24,7 @@ class CurrencyViewSet(viewsets.ModelViewSet):
 
         for symbol, usd_rate in api_dict["quotes"].items():
             data = {
-                "gbp_rate": usd_rate/usd_gbp_rate,
+                "rate": usd_rate/usd_gbp_rate,
                 "last_updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z")
             }
 
@@ -39,7 +39,7 @@ class CurrencyViewSet(viewsets.ModelViewSet):
                 new_values.update(data)
                 obj = Currency(**new_values)
                 obj.save()
-    
+
     def list(self, request, format=None):
         for currency in self.queryset:
             if datetime.now(timezone.utc) - currency.last_updated > timedelta(days=7):
@@ -47,7 +47,21 @@ class CurrencyViewSet(viewsets.ModelViewSet):
                 break
 
         serializer = self.serializer_class(self.queryset, many=True)
-        return Response(serializer.data)
+
+
+        source_string = request.GET.get("source", None)
+        if source_string:
+            source_currency = get_object_or_404(self.queryset, pk=source_string)
+            enriched_data = copy.deepcopy(serializer.data)
+            for currency in enriched_data:
+                currency["source"] = source_string
+                currency["rate"] = currency["rate"]/source_currency.rate
+            return Response(enriched_data)
+        else:
+            enriched_data = copy.deepcopy(serializer.data)
+            for currency in enriched_data:
+                currency["source"] = "GBP"
+            return Response(enriched_data)
 
     def retrieve(self, request, pk=None):
         currency = get_object_or_404(self.queryset, pk=pk)
@@ -64,10 +78,23 @@ class CurrencyViewSet(viewsets.ModelViewSet):
 
             gbp_rate = api_dict["quotes"][f"USD{pk}"] / usd_gbp_rate
 
-            currency.gbp_rate = gbp_rate
+            currency.rate = gbp_rate
             currency.last_updated = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z")
             currency.save()
   
 
         serializer = self.serializer_class(currency)
+        
+        source_string = request.GET.get("source", None)
+        if source_string:
+            source_currency = get_object_or_404(self.queryset, pk=source_string)
+            enriched_data = copy.deepcopy(serializer.data)
+            enriched_data["source"] = source_string
+            enriched_data["rate"] = enriched_data["rate"]/source_currency.rate
+            return Response(enriched_data)
+        else:
+            enriched_data = copy.deepcopy(serializer.data)
+            enriched_data["source"] = "GBP"
+            return Response(enriched_data)
+            
         return Response(serializer.data)

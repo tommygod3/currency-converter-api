@@ -5,4 +5,4 @@ from rest_framework import serializers
 class CurrencySerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Currency
-        fields = ['symbol', 'gbp_rate', 'last_updated']
+        fields = ['symbol', 'rate', 'last_updated']
