@@ -44,10 +44,13 @@ class CurrencyViewSet(viewsets.ModelViewSet):
                 obj.save()
 
     def list(self, request, format=None):
-        for currency in self.queryset:
-            if datetime.now(timezone.utc) - currency.last_updated > timedelta(days=7):
-                self.update_all_currencies()
-                break
+        if (request.GET.get("update", None) == "True"):
+            self.update_all_currencies()
+        else:
+            for currency in self.queryset:
+                if datetime.now(timezone.utc) - currency.last_updated > timedelta(days=7):
+                    self.update_all_currencies()
+                    break
 
         serializer = self.serializer_class(self.queryset, many=True)
 
