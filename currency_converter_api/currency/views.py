@@ -8,8 +8,10 @@ import json, copy
 import requests
 from datetime import datetime, timezone, timedelta
 
+from .currency_names import currency_names
+
 class CurrencyViewSet(viewsets.ModelViewSet):
-    queryset = Currency.objects.all().order_by('-symbol')
+    queryset = Currency.objects.all().order_by('symbol')
     serializer_class = CurrencySerializer
 
     api_url = "http://apilayer.net/api/live?access_key=2938f0796b94b63bdd3d56e0faa2628e"
@@ -25,6 +27,7 @@ class CurrencyViewSet(viewsets.ModelViewSet):
         for symbol, usd_rate in api_dict["quotes"].items():
             data = {
                 "rate": usd_rate/usd_gbp_rate,
+                "name": currency_names.get(symbol[3:], "None"),
                 "last_updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z")
             }
 
@@ -78,6 +81,7 @@ class CurrencyViewSet(viewsets.ModelViewSet):
 
             gbp_rate = api_dict["quotes"][f"USD{pk}"] / usd_gbp_rate
 
+            currency.name = currency_names.get(pk, "None"),
             currency.rate = gbp_rate
             currency.last_updated = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z")
             currency.save()
