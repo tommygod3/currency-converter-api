@@ -104,4 +104,3 @@ class CurrencyViewSet(viewsets.ModelViewSet):
             enriched_data["source"] = "GBP"
             return Response(enriched_data)
             
-        return Response(serializer.data)
