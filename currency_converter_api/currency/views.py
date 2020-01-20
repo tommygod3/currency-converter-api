@@ -106,10 +106,8 @@ class CurrencyViewSet(viewsets.ModelViewSet):
             enriched_data = copy.deepcopy(serializer.data)
             enriched_data["source"] = source_string
             enriched_data["rate"] = enriched_data["rate"]/source_currency.rate
-            enriched_data["name"] = enriched_data["name"].split("'")[1]
             return Response(enriched_data)
         else:
             enriched_data = copy.deepcopy(serializer.data)
             enriched_data["source"] = "GBP"
-            enriched_data["name"] = enriched_data["name"].split("'")[1]
             return Response(enriched_data)
